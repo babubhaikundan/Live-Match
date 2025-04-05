@@ -18,6 +18,21 @@
             background: black;
         }
 
+        .center-play {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            padding: 20px 30px;
+            font-size: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: block;
+        }
+
         .controls {
             background: rgba(0, 0, 0, 0.7);
             color: white;
@@ -52,13 +67,14 @@
 <body>
     <div class="video-container">
         <video id="videoPlayer" poster="https://www.icecric.news/wp-content/uploads/2024/12/unnamed-3.webp">
-
-            
-            <source src="https://vkvsd250.okcdn.ru/cmaf/8177201777196/sig/j6X5gf0MwQc/srcIp/172.69.95.67/urls/45.136.22.65/expires/1743885970114/clientType/13/srcAg/CHROME/fromCache/1/mid/9469206211372/id/8177201777196/get/CKzWsMXLkwIQ6AcYBDIICgYI2AYQ4AM6BAjE2AJaBggBEAIoF2ICCBAd9w359pl0Qg/track.m3u8" type="video/mp4" data-quality="480p">
-            <source src="https://vkvsd250.okcdn.ru/cmaf/8177201777196/sig/j6X5gf0MwQc/srcIp/172.69.95.67/urls/45.136.22.65/expires/1743885970114/clientType/13/srcAg/CHROME/fromCache/1/mid/9469206211372/id/8177201777196/get/CKzWsMXLkwIQ6AcYBTIICgYIgAoQ0AU6BAjE2AJaBggDEAIoF2ICCBjE8jl8-Mjg2A/track.m3u8" type="video/mp4" data-quality="720p">
-            <source src="https://vkvsd250.okcdn.ru/cmaf/8177201777196/sig/j6X5gf0MwQc/srcIp/172.69.95.67/urls/45.136.22.65/expires/1743885970114/clientType/13/srcAg/CHROME/fromCache/1/mid/9469206211372/id/8177201777196/get/CKzWsMXLkwIQ6AcYBjIICgYIgA8QuAg6BAjE2AJaBggDEAIoF2ICCCBzSNdXn6RH6w/track.m3u8" type="video/mp4" data-quality="1080p">
+            <source src="https://vkvsd250.okcdn.ru/cmaf/8177201777196/sig/j6X5gf0MwQc/srcIp/172.69.95.67/urls/45.136.22.65/expires/1743885970114/clientType/13/srcAg/CHROME/fromCache/1/mid/9469206211372/id/8177201777196/get/CKzWsMXLkwIQ6AcYBDIICgYI2AYQ4AM6BAjE2AJaBggBEAIoF2ICCBAd9w359pl0Qg/track.m3u8" data-quality="480p">
+            <source src="https://vkvsd250.okcdn.ru/cmaf/8177201777196/sig/j6X5gf0MwQc/srcIp/172.69.95.67/urls/45.136.22.65/expires/1743885970114/clientType/13/srcAg/CHROME/fromCache/1/mid/9469206211372/id/8177201777196/get/CKzWsMXLkwIQ6AcYBTIICgYIgAoQ0AU6BAjE2AJaBggDEAIoF2ICCBjE8jl8-Mjg2A/track.m3u8" data-quality="720p">
+            <source src="https://vkvsd250.okcdn.ru/cmaf/8177201777196/sig/j6X5gf0MwQc/srcIp/172.69.95.67/urls/45.136.22.65/expires/1743885970114/clientType/13/srcAg/CHROME/fromCache/1/mid/9469206211372/id/8177201777196/get/CKzWsMXLkwIQ6AcYBjIICgYIgA8QuAg6BAjE2AJaBggDEAIoF2ICCCBzSNdXn6RH6w/track.m3u8" data-quality="1080p">
+            <source src="https://vkvsd250.okcdn.ru/cmaf/8177201777196/sig/j6X5gf0MwQc/srcIp/172.69.95.67/urls/45.136.22.65/expires/1743885970114/clientType/13/srcAg/CHROME/fromCache/1/mid/9469206211372/id/8177201777196/get/CKzWsMXLkwIQ6AcYBjIICgYIgA8QuAg6BAjE2AJaBggDEAIoF2ICCCBzSNdXn6RH6w/track.m3u8"data-quality="1080p">
             Your browser does not support the video tag.
         </video>
+        
+        <button id="centerPlay" class="center-play">▶</button>
         
         <div class="controls">
             <button id="playPause">Play</button>
@@ -66,6 +82,7 @@
                 <option value="480p">480p</option>
                 <option value="720p">720p</option>
                 <option value="1080p">1080p</option>
+                 <option value="2160p">2160p</option>
             </select>
             <button id="mute">Mute</button>
             <input type="range" id="volume" min="0" max="1" step="0.1" value="1">
@@ -80,6 +97,7 @@
     <script>
         const video = document.getElementById('videoPlayer');
         const playPause = document.getElementById('playPause');
+        const centerPlay = document.getElementById('centerPlay');
         const mute = document.getElementById('mute');
         const volume = document.getElementById('volume');
         const fullscreen = document.getElementById('fullscreen');
@@ -89,36 +107,44 @@
         const progressBar = document.getElementById('progressBar');
         const progress = document.getElementById('progress');
 
-        // Play/Pause functionality
-        playPause.addEventListener('click', () => {
+        function togglePlay() {
             if (video.paused) {
                 video.play();
                 playPause.textContent = 'Pause';
+                centerPlay.style.display = 'none';
             } else {
                 video.pause();
                 playPause.textContent = 'Play';
+                centerPlay.style.display = 'block';
             }
+        }
+
+        playPause.addEventListener('click', togglePlay);
+        centerPlay.addEventListener('click', togglePlay);
+
+        video.addEventListener('play', () => {
+            centerPlay.style.display = 'none';
         });
 
-        // Mute/Unmute
+        video.addEventListener('pause', () => {
+            centerPlay.style.display = 'block';
+        });
+
         mute.addEventListener('click', () => {
             video.muted = !video.muted;
             mute.textContent = video.muted ? 'Unmute' : 'Mute';
         });
 
-        // Volume control
         volume.addEventListener('input', () => {
             video.volume = volume.value;
         });
 
-        // Fullscreen
         fullscreen.addEventListener('click', () => {
             if (video.requestFullscreen) {
                 video.requestFullscreen();
             }
         });
 
-        // Quality selection
         qualitySelect.addEventListener('change', () => {
             const currentTime = video.currentTime;
             const wasPlaying = !video.paused;
@@ -135,7 +161,6 @@
             }
         });
 
-        // Time update
         video.addEventListener('timeupdate', () => {
             const current = formatTime(video.currentTime);
             const total = formatTime(video.duration);
@@ -146,21 +171,18 @@
             progress.style.width = percentage + '%';
         });
 
-        // Progress bar click
         progressBar.addEventListener('click', (e) => {
             const rect = progressBar.getBoundingClientRect();
             const pos = (e.pageX - rect.left) / progressBar.offsetWidth;
             video.currentTime = pos * video.duration;
         });
 
-        // Format time in MM:SS
         function formatTime(seconds) {
             const minutes = Math.floor(seconds / 60);
             const secs = Math.floor(seconds % 60);
             return `${minutes}:${secs < 10 ? '0' + secs : secs}`;
         }
 
-        // Set initial duration when metadata is loaded
         video.addEventListener('loadedmetadata', () => {
             duration.textContent = formatTime(video.duration);
         });
