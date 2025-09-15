@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Match Dekho</title>
+
+  <link rel="stylesheet" href="https://cdn.plyr.io/3.6.8/plyr.css" />
+
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <script src="https://cdn.plyr.io/3.6.8/plyr.polyfilled.js"></script>
+
+  <style>
+    :root{
+      --bg:#000;
+      --muted:#9aa3a6;
+      --accent:#00ffc8;
+      --gold:#FFD700;
+      --card:#111;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+      font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+      background:linear-gradient(180deg,#060606 0,#0b0b0b 100%);
+      color:#fff;
+    }
+    header{padding:10px 16px;text-align:center}
+    header h1{margin:6px 0;font-size:1.05rem;color:#ff3333}
+    header p{margin:0;font-size:.92rem;color:limegreen}
+    .wrap{width:100%;max-width:1100px;margin:16px auto;padding:0 12px}
+    
+    /* Fallback buttons ki styling (Abhi bhi zaroori hai) */
+    button, .btn {background:var(--accent);color:#000;border:none;padding:9px 12px;border-radius:10px;font-weight:700;cursor:pointer;box-shadow: 0 6px 14px rgba(0,0,0,0.45);transition:transform .14s ease}
+    button:hover, .btn:hover{ transform: translateY(-2px) }
+    
+    .player-wrap{flex:1;display:flex;justify-content:center;align-items:center;padding:10px;min-height:80vh} /* Thodi height badha di hai */
+    .player-card{width:100%;max-width:980px;display:flex;flex-direction:column;gap:10px;align-items:center}
+    video, iframe {width:100%;height:56.25vw;max-height:560px;max-width:980px;border-radius:14px;border:1px solid rgba(255,255,255,0.03);background:#000;box-shadow:0 12px 30px rgba(0,0,0,0.6)}
+    @media (max-width:720px){ video, iframe { height:56vw; } }
+    
+    #loading{ display:flex; flex-direction:column; align-items:center; gap:8px; color:var(--muted)}
+    .spinner{ border:6px solid rgba(255,255,255,0.08); border-top:6px solid var(--accent); width:48px;height:48px;border-radius:50%; animation:spin 1s linear infinite}
+    @keyframes spin{ to { transform:rotate(360deg) } }
+    
+    #error{ color:#ff7b7b; text-align:center; font-size:.95rem }
+    
+    .fallback {margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+    .fallback .open {background:transparent;color:var(--accent);border:1px solid rgba(0,255,200,0.12);padding:8px 12px;border-radius:10px;cursor:pointer}
+    
+    footer{position:sticky;bottom:0;left:0;right:0;display:flex;justify-content:center;padding:12px 8px;backdrop-filter: blur(8px);background: linear-gradient(180deg, rgba(10,10,10,0.45), rgba(0,0,0,0.6));box-shadow: 0 -6px 18px rgba(0,0,0,0.6);z-index:30}
+    .brand {display:flex; gap:10px; align-items:center; padding:8px 12px; border-radius:12px; background: rgba(20,30,20,0.7);box-shadow: 0 6px 16px rgba(0,0,0,0.5);text-decoration:none}
+    .brand img{ width:18px;height:18px }
+    .dev { color:var(--accent); font-weight:700; font-size:.95rem }
+    .name { color:var(--gold); font-weight:800; display:flex; gap:8px; align-items:center }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Welcome to my World 💀</h1> <br>
+    <p><b>Don't think too much about how I did it, Just enjoy 😀</b></p>
+  </header>
+
+  <div class="wrap">
+    <div class="player-wrap">
+      <div class="player-card">
+        <div id="loading" style="display:none">
+          <div class="spinner"></div>
+          <div>Loading stream... ⏳</div>
+        </div>
+        <video id="videoPlayer" controls playsinline style="display:none"></video>
+        <iframe id="pageFrame" style="display:none" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+        <div id="error" style="display:none"></div>
+        <div class="fallback" style="display:none">
+          <button id="openBtn" class="open">if Token issue, Click Here</button>
+          
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <a class="brand" href="https://t.me/kundan_yadav_bot" target="_blank">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" alt="tg">
+      <span class="dev">Developer💀:-</span>
+      <span class="name">𝕂𝕦𝕟𝕕𝕒𝕟 𝕐𝕒𝕕𝕒𝕧 <img src="https://s.tfrbot.com/h/gL5VTi" alt="me" style="width:20px;height:20px;border-radius:50%"></span>
+    </a>
+  </footer>
+
+<script>
+  // ==================================================================
+  // JAVASCRIPT PLAYER LOGIC
+  // ==================================================================
+
+  // ------------------------------------------------------------------
+  // CONFIGURATION
+  // ------------------------------------------------------------------
+  const DEFAULT_VIDEO_URL = "https://tataplay.slivcdn.com/hls/live/2020591/TEN3HD/master_3500.m3u8";
+  const PROXY_BASE = ""; // Proxy functionality abhi bhi kaam karegi agar aap yahan link daalte hain.
+
+  // ------------------------------------------------------------------
+  // ELEMENT SELECTION
+  // ------------------------------------------------------------------
+  const $ = id => document.getElementById(id);
+  const video = $("videoPlayer");
+  const iframe = $("pageFrame");
+  const loading = $("loading");
+  const errorBox = $("error");
+  const fallback = document.querySelector(".fallback");
+  const openBtn = $("openBtn");
+  
+
+  // ------------------------------------------------------------------
+  // INITIAL SETUP & AUTOPLAY
+  // ------------------------------------------------------------------
+  const params = new URLSearchParams(window.location.search);
+  const initialUrl = params.get('url') || DEFAULT_VIDEO_URL;
+
+  if (initialUrl) {
+    playStream(initialUrl);
+  } else {
+    showError("Koi video URL nahi mila. Kripya URL parameter ya default URL set karein.");
+  }
+
+  // ------------------------------------------------------------------
+  // UI MANAGEMENT FUNCTIONS
+  // ------------------------------------------------------------------
+  function resetUI() {
+    loading.style.display = "none";
+    errorBox.style.display = "none";
+    fallback.style.display = "none";
+    video.style.display = "none";
+    iframe.style.display = "none";
+    if (window._plyr) {
+      try { window._plyr.destroy(); } catch(e){}
+      window._plyr = null;
+    }
+  }
+
+  function showError(msg) {
+    resetUI();
+    errorBox.style.display = "block";
+    errorBox.textContent = msg;
+    fallback.style.display = "flex";
+  }
+
+  function showLoading() {
+    resetUI();
+    loading.style.display = "flex";
+  }
+
+  function showVideo() {
+    resetUI();
+    video.style.display = "block";
+  }
+
+  function showIframe() {
+    resetUI();
+    iframe.style.display = "block";
+  }
+
+  // ------------------------------------------------------------------
+  // HELPER FUNCTIONS
+  // ------------------------------------------------------------------
+  function buildUrl(rawUrl) {
+    if (PROXY_BASE) {
+      return PROXY_BASE.includes("{url}")
+        ? PROXY_BASE.replace("{url}", encodeURIComponent(rawUrl))
+        : PROXY_BASE + encodeURIComponent(rawUrl);
+    }
+    return rawUrl;
+  }
+
+  function isHlsLink(url) { return /\.m3u8(\?.*)?$/i.test(url); }
+  function isVideoFile(url) { return /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url); }
+  function isHtmlLink(url) { return /\.html?(\?.*)?$/i.test(url) || /\/$/.test(url); }
+
+  // ------------------------------------------------------------------
+  // CORE PLAYER LOGIC
+  // ------------------------------------------------------------------
+  async function playStream(rawUrl) {
+    if (!rawUrl) {
+      showError("Video URL missing.");
+      return;
+    }
+
+    const finalUrl = buildUrl(rawUrl);
+    openBtn.onclick = () => window.open(finalUrl, "_blank");
+    
+    showLoading();
+
+    try {
+      if (isHtmlLink(rawUrl)) {
+        iframe.src = rawUrl;
+        showIframe();
+        return;
+      }
+
+      if (isVideoFile(rawUrl)) {
+        video.src = finalUrl;
+        await video.load();
+        showVideo();
+        window._plyr = new Plyr(video);
+        return;
+      }
+
+      if (isHlsLink(rawUrl) || rawUrl.includes("m3u8")) {
+        if (Hls.isSupported()) {
+          const hls = new Hls();
+          hls.on(Hls.Events.ERROR, (event, data) => {
+            if (data.fatal) {
+              showError("HLS error. Token issue occurred.");
+            }
+          });
+          hls.loadSource(finalUrl);
+          hls.attachMedia(video);
+          hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            showVideo();
+            window._plyr = new Plyr(video);
+          });
+          return;
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+          video.src = finalUrl;
+          video.addEventListener('loadedmetadata', () => {
+            showVideo();
+            window._plyr = new Plyr(video);
+          });
+          return;
+        }
+      }
+      
+      showError("Unsupported link format.");
+
+    } catch (err) {
+      showError(`Error: ${err.message}`);
+    }
+  }
+</script>
+</body>
+</html>
